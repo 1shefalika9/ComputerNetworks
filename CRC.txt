@@ -1,0 +1,58 @@
+#include<iostream>
+using namespace std;
+
+string funcXOR( string encoded , string gen)                         
+{
+    int crclen = gen.length();
+    
+    for ( int i = 0 ; i <= (encoded.length() - crclen) ; )          // performing bitwise xor operation
+    {                                                              
+        for( int j=0 ; j < crclen ; j++)                                
+        {
+            encoded[i+j] = encoded[i+j] == gen[j] ? '0' : '1' ;  /*if encoded bit and crc bit are same , then replace it with zero*/    
+        }
+    for( ; i< encoded.length() && encoded[i] != '1' ; i++) ;
+    
+    }
+    
+    return encoded;
+}
+
+int main(int argc, char const *argv[])
+{
+    string message, generator, encoded="";
+    cout<<"\n-----------Sender Side CRC implementation--------------\n";
+    cout<<"Enter the message bits: ";
+    cin>>message;
+    cout<<"\nEnter the generator: ";
+    cin>>generator;
+
+    encoded+=message;       //encoded bits are initialized to message bits
+    int data_len = message.length();
+    int gen_len = generator.length();
+
+    for(int i=1 ; i <= (gen_len - 1) ; i++)
+        encoded += '0';     /*appending generator polynomial-1 number of zeros to encoded bits*/
+
+    encoded = funcXOR(encoded, generator);
+    cout<<"\nChecksum generated: "<<encoded.substr(encoded.length() - gen_len + 1)<<"\n";    
+    cout<<"Message to be transmitted over network: "<<message + encoded.substr(encoded.length() - gen_len + 1)<<"\n";  
+
+    cout<<"\n-----------Reciever Side CRC implementation--------------\n";
+    cout<<"Enter the message recieved: ";
+    string msg;                                                             
+    cin>>msg;
+    
+    msg = funcXOR( msg , generator);                            /*bitwise xor is performed between recieved bits and the generator crc bits*/
+    
+    for( char i : msg.substr(msg.length() - gen_len + 1))                    
+        if( i != '0' )                                          /*after performing xor, if the last few bits aren't zero then there's error in transmission*/
+            {   
+                cout<<"Error in transmission!! Incorrect message recieved. "<<endl;     
+                return 0;
+            }
+    
+    cout<<"No Error in message transmission!"<<endl;                                    //else NO ERROR
+
+    return 0;
+}

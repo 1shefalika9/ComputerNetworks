@@ -1,0 +1,79 @@
+//SHEFALIKA GHOSH
+//19544
+//Program to implement Dijkstra Algorithm
+
+#include <iostream>
+#include <climits> 
+using namespace std;
+
+int finMin(int n, int d[], bool spt[]){
+    int min = INT_MAX, min_index;
+    
+    
+    for (int j = 0; j < n; ++j)//finding minimum in dist[]
+        if (spt[j] == false && d[j] <= min){ 
+            min = d[j];
+            min_index = j; 
+        }
+    return min_index; 
+}
+
+int main(int argc, char const *argv[])
+{
+  int nodes;
+  cout<<"Enter the total no. of routers present in network: ";
+  cin>>nodes;
+  int dist[nodes]; 
+  bool s[nodes];
+	for (int i = 0; i < nodes; ++i){		
+		s[i] = false;
+    		dist[i] = INT_MAX;
+	}
+	
+	dist[0] = 0;	//since distance of source node from source node is 0
+	
+
+	//creating adjacency matrix
+	int AdjMat[nodes][nodes];
+
+	for(int i = 0; i < nodes; ++i)
+        for(int j = 0; j< nodes;j++)
+            AdjMat[i][j]=0;		//initializing all elements in adjacency matrix to 0
+
+    
+    int n, w, adj;
+	for (int i = 0; i < nodes; ++i)
+     { cout<<"\nRouter"<<i<<" is adjacent to how many routers? (should be less than the total no. of routers): ";
+       cin>>n;
+       cout<<"\nEnter the adjacent routers and their distance from router"<<i<<": ";
+       for(int j=0; j<n; j++)
+       {   cout<<"\nAdjacent router: ";
+   		   cin>>adj;
+   		   cout<<"\nDistance from router "<<i<<": ";
+   		   cin>>w;
+           AdjMat[i][adj]=w; 
+       }
+     }
+
+    cout<<"\nThe source router is router 0.\n";
+    for (int i = 0; i < nodes-1; ++i)
+    {
+       int u = finMin(nodes, dist, s);
+       s[u] = true;
+
+       for (int v = 0; v < nodes; ++v)
+       {
+           /* Update dist[v] only if v is not in s[], there is an edge from 
+              u to v, and total weight of path from src to  v through u is 
+              smaller than current value of dist[v] */
+            if (!s[v] && AdjMat[u][v] && dist[u] != INT_MAX && dist[u] + AdjMat[u][v] < dist[v]) //relax function
+                dist[v] = dist[u] + AdjMat[u][v]; 
+       }
+    }
+    
+    cout<<"\nVertex \t\t Distance from Source\n"; 
+    for (int i = 0; i < nodes; i++) 
+        cout<<i<<"\t\t"<<dist[i]<<"\n";
+
+    return 0;
+}

@@ -1,0 +1,159 @@
+#include <iostream>
+#include <cstdlib>
+#include <ctime>
+#include <unistd.h>  //for sleep()
+
+using namespace std;
+
+struct packet
+{  int data; };
+
+struct frame_to_receiver
+{						
+    packet p;
+    int sq_no;
+};
+
+void sender_network_to_data(packet p){
+	cout<<"\nPacket with data "<<p.data<<" sent from network layer to data layer.";
+}
+void sender_data_to_physical(frame_to_receiver f, bool duplicate=false)	//send frame containing data and sequence no.
+{
+	if (duplicate==true)
+		cout<<"\nFrame with sequence no:"<<f.sq_no<<" sent again from data layer to physical layer.";
+	else	
+		cout<<"\nPacket converted to frame with sequence no:"<<f.sq_no<<". Frame sent from data layer to physical layer.";
+} 
+
+void recv_data_to_network(frame_to_receiver f2)	//sending correctly arrived message to network
+{	
+	cout<<"\nFrame with sequence no:"<<f2.sq_no<<" received. Frame sent to network layer for decapsulation.";
+}
+
+int recv_data_to_physical(frame_to_receiver f3, bool dup = false) //change value of ack to the next sequence no 
+{	
+	if (dup==true){
+		cout<<"\nFrame received with sequence no:"<<f3.sq_no<<".";
+		cout<<"\nDuplicate frame received. Frame discarded!";
+		cout<<"\nSending acknowledgement with sequence no:"<<1-f3.sq_no<<" to sender again.";
+		return 1-f3.sq_no;
+	}
+
+	else{
+		cout<<"\nSuccessful transmission!! Sending acknowledgement with sequence no:"<<1-f3.sq_no<<" to sender.";
+		return 1-f3.sq_no;
+	}
+}
+
+void sender(packet, frame_to_receiver);
+int receiver(int, frame_to_receiver);
+
+int main(int argc, char const *argv[])
+{
+	int n;
+	cout<<"\nHow many packets do u wish to send?: ";
+	cin>>n;
+	packet pkt[n];
+	frame_to_receiver frm[n];
+	cout<<"\nEnter the data for each packet: \n";
+	for (int i = 0; i < n; ++i)
+	{
+		cout<<"\nInfo in packet"<<i+1<<": ";
+		cin>>pkt[i].data;
+		frm[i].p=pkt[i];
+		if(i!=0)
+			frm[i].sq_no=1-frm[i-1].sq_no;
+		else
+			frm[i].sq_no=0;
+	}	
+		
+	for (int i = 0; i < n; ++i)
+	{
+		sender(pkt[i], frm[i]);
+	}
+	
+	cout<<"\n\nAll data packets sent. Stop and wait protocol simulation demonstration ends.";
+	return 0;
+}
+
+void sender(packet pkt, frame_to_receiver frame)
+{
+	sleep(2);
+	cout<<"\n\n--------------------------SENDER--------------------------";
+	sender_network_to_data(pkt);
+	sender_data_to_physical(frame);
+
+	srand(time(0));		//simulating one of the three possible situations
+	int event;
+	event = (rand() % 3) + 1;
+
+	/* 	Event1: successful transmission
+		Event2: frame lost so ack not recieved, frame sent again
+		Event3: ack not recieved, manage duplicate frames  */
+
+	int status;			 //0/1 returned will indicate successful transmission with status being the ack no.
+	status = receiver(event, frame); //-2 returned will indicate transmission error due to Event2
+	sleep(2);			 //-3 returned will indicate transmission error due to Event3
+
+	if(status >= 0){
+		cout<<"\n\n--------------------------SENDER--------------------------";
+		cout<<"\nAcknowledgement with sequence no:"<<status<<" received for successful transmission.";	
+		return;
+	}
+
+	else if(status == -2){
+		cout<<"\n\n--------------------------SENDER--------------------------";
+		cout<<"\nTimeout!! Acknowledgement not received.";
+		sender_data_to_physical(frame, true);
+		int status2;
+		status2 = receiver(1, frame);
+		sleep(2);
+		cout<<"\n\n--------------------------SENDER--------------------------";
+		cout<<"\nAcknowledgement with sequence no:"<<status2<<" received for successful transmission.";
+		return;
+	}
+
+	else if(status == -3){
+		cout<<"\n\n--------------------------SENDER--------------------------";
+		cout<<"\nTimeout!! Acknowledgement not received.";
+		sender_data_to_physical(frame, true);
+		int status3;
+		status3 = receiver(-100, frame);
+		sleep(2);
+		cout<<"\n\n--------------------------SENDER--------------------------";
+		cout<<"\nAcknowledgement with sequence no:"<<status3<<" received for successful transmission.";
+		return;
+	}
+								
+}
+
+int receiver(int situation, frame_to_receiver frame2)	//sends back ack to sender()
+{	
+	int r_ack;
+	sleep(2);
+	cout<<"\n\n--------------------------RECEIVER--------------------------";
+
+	if (situation==1)	//Successful transmission
+	{	
+		recv_data_to_network(frame2);		
+		r_ack = recv_data_to_physical(frame2);
+	}
+	else if(situation==2)	//lost frame
+	{
+		cout<<"\nWaiting for frame .......";	
+		r_ack = -2;
+	}
+
+	else if(situation==3)	//lost ack
+	{
+		recv_data_to_network(frame2);
+		int ack_no;		
+		ack_no = recv_data_to_physical(frame2);
+		r_ack =  -3;
+	}
+
+	else if(situation==-100)	//managing lost ack
+		r_ack = recv_data_to_physical(frame2, true);
+		
+	return r_ack;
+} 
